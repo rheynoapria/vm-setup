@@ -8,6 +8,7 @@ locals {
   user_data = templatefile("${path.module}/templates/cloud-init.tpl", {
     ssh_public_key = local.ssh_public_key
     vm_settings = {
+      hostname = var.hostname
       new_user = var.admin_username
       ssh_port = var.ssh_port
       install_docker = var.install_docker
@@ -111,7 +112,7 @@ resource "aws_instance" "main" {
   }
   
   tags = {
-    Name = "${var.name_prefix}-instance"
+    Name = var.hostname
   }
 }
 

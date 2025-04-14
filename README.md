@@ -31,8 +31,19 @@ This toolkit solves the challenge of consistently applying security hardening to
 
 ### Option 1: One-line Bootstrap (for existing VM)
 
+Standard installation:
 ```bash
 curl -sSL https://raw.githubusercontent.com/rheynoapria/vm-setup/main/scripts/bootstrap.sh | sudo bash
+```
+
+With custom hostname:
+```bash
+curl -sSL https://raw.githubusercontent.com/rheynoapria/vm-setup/main/scripts/bootstrap.sh | sudo bash -s -- --hostname custom-host
+```
+
+With SSH key and hostname:
+```bash
+curl -sSL https://raw.githubusercontent.com/rheynoapria/vm-setup/main/scripts/bootstrap.sh | sudo bash -s -- --ssh-key "ssh-rsa AAA..." --hostname custom-host
 ```
 
 ### Option 2: Terraform Deployment (for new AWS VM)
@@ -63,6 +74,9 @@ cd vm-setup
 sudo mkdir -p /opt/scripts/config
 sudo cp ~/.ssh/id_rsa.pub /opt/scripts/config/authorized_keys
 
+# Set custom hostname (optional)
+echo 'VM_HOSTNAME="your-custom-hostname"' | sudo tee -a /opt/scripts/config/settings.env
+
 # Run installer
 sudo bash install.sh
 
@@ -76,7 +90,7 @@ For creating a new hardened VM on AWS:
 
 ```bash
 cd terraform
-# Edit variables in terraform.tfvars
+# Edit variables in terraform.tfvars including hostname
 terraform init
 terraform plan  # Review changes
 terraform apply
@@ -85,6 +99,7 @@ terraform apply
 The Terraform configuration:
 - Creates a new VPC with proper networking
 - Deploys a VM with encrypted storage
+- Sets the specified hostname
 - Applies all hardening automatically via cloud-init
 - Outputs SSH connection details
 
@@ -93,7 +108,7 @@ The Terraform configuration:
 For automated provisioning during VM creation:
 
 1. Copy the [cloud-init/user-data.yml](cloud-init/user-data.yml) file
-2. Modify the SSH public key and other settings as needed
+2. Modify the SSH public key and hostname settings as needed
 3. Provide this as user-data when launching a new VM
 
 Works with AWS, GCP, Azure, DigitalOcean, and other cloud providers supporting cloud-init.
@@ -125,7 +140,11 @@ For applying to existing servers:
 ```bash
 cd ansible
 # Edit inventory.ini to add your servers
+# Hostnames in inventory will be used as VM hostnames by default
 ansible-playbook -i inventory.ini playbook.yml
+
+# Or override hostname for specific servers
+ansible-playbook -i inventory.ini playbook.yml -e "vm_hostname=custom-hostname"
 ```
 
 Ansible allows for mass-deployment to multiple servers and includes:
@@ -163,6 +182,7 @@ Key settings that can be configured:
 |---------|-------------|---------|
 | `NEW_USER` | Admin username to create | `sysadmin` |
 | `SSH_PORT` | Custom SSH port | `2222` |
+| `VM_HOSTNAME` | Hostname to set on the VM | `secure-vm` |
 | `INSTALL_DOCKER` | Whether to install Docker | `true` |
 | `INSTALL_MONITORING` | Install monitoring tools | `true` |
 | `ENABLE_AUTO_UPDATES` | Configure automatic updates | `true` |
@@ -242,6 +262,7 @@ sudo /opt/scripts/check-security.sh
 | SSH key not working | Check `/opt/scripts/config/authorized_keys` permissions (should be 0600) |
 | Service not starting | Verify with `journalctl -u post-provision` |
 | Firewall blocking connections | Use `sudo ufw status` and adjust rules as needed |
+| Hostname not changing | Ensure `/etc/hostname` is writable and reboot if needed |
 
 ## Contributing
 

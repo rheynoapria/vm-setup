@@ -2,7 +2,7 @@
 # Cloud-init configuration for secure Ubuntu VM
 
 # Set hostname
-hostname: secure-vm
+hostname: ${vm_settings.hostname}
 manage_etc_hosts: true
 
 # Update and install dependencies
@@ -46,6 +46,7 @@ write_files:
       # VM Post-Provisioning Settings
       NEW_USER="${vm_settings.new_user}"
       SSH_PORT=${vm_settings.ssh_port}
+      VM_HOSTNAME="${vm_settings.hostname}"
       INSTALL_DOCKER=${vm_settings.install_docker}
       INSTALL_MONITORING=${vm_settings.install_monitoring}
       ENABLE_AUTO_UPDATES=true

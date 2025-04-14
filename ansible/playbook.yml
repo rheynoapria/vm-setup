@@ -6,6 +6,7 @@
   vars:
     vm_user: sysadmin
     ssh_port: 2222
+    vm_hostname: "{{ inventory_hostname_short }}"
     install_docker: true
     install_monitoring: true
     enable_auto_updates: true
@@ -14,6 +15,19 @@
     create_trigger_dir: true
     
   tasks:
+    - name: Set hostname
+      hostname:
+        name: "{{ vm_hostname }}"
+      when: vm_hostname is defined
+      
+    - name: Ensure hostname is in /etc/hosts
+      lineinfile:
+        path: /etc/hosts
+        regexp: '^127\.0\.1\.1'
+        line: "127.0.1.1 {{ vm_hostname }}"
+        state: present
+      when: vm_hostname is defined
+    
     - name: Create directories
       file:
         path: "{{ item }}"
@@ -49,6 +63,7 @@
           # VM Post-Provisioning Settings
           NEW_USER="{{ vm_user }}"
           SSH_PORT={{ ssh_port }}
+          VM_HOSTNAME="{{ vm_hostname }}"
           INSTALL_DOCKER={{ install_docker | lower }}
           INSTALL_MONITORING={{ install_monitoring | lower }}
           ENABLE_AUTO_UPDATES={{ enable_auto_updates | lower }}

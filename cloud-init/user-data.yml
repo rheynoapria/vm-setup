@@ -2,7 +2,7 @@
 # Cloud-init configuration for Ubuntu VM
 
 # Set hostname
-hostname: ubuntu-secure
+hostname: {{ VM_HOSTNAME | default('ubuntu-secure') }}
 manage_etc_hosts: true
 
 # Update and install dependencies
@@ -46,6 +46,7 @@ write_files:
       # VM Post-Provisioning Settings
       NEW_USER="sysadmin"
       SSH_PORT=2222
+      VM_HOSTNAME="{{ VM_HOSTNAME | default('ubuntu-secure') }}"
       INSTALL_DOCKER=true
       INSTALL_MONITORING=true
       ENABLE_AUTO_UPDATES=true

@@ -426,4 +426,20 @@ log "SSH service is now running on port $SSH_PORT"
 log "Please use the user '$NEW_USER' for future SSH connections"
 log "You can check system security with: sudo /opt/scripts/check-security.sh"
 
+# Set hostname if configured
+if [ -n "${VM_HOSTNAME}" ]; then
+    log "Setting hostname to ${VM_HOSTNAME}"
+    hostname "${VM_HOSTNAME}" || log "Warning: Failed to set hostname immediately"
+    echo "${VM_HOSTNAME}" > /etc/hostname || log "Warning: Failed to update /etc/hostname"
+    
+    # Update /etc/hosts
+    if grep -q "127.0.1.1" /etc/hosts; then
+        sed -i "s/127.0.1.1.*/127.0.1.1\t${VM_HOSTNAME}/" /etc/hosts || log "Warning: Failed to update hostname in /etc/hosts"
+    else
+        echo -e "127.0.1.1\t${VM_HOSTNAME}" >> /etc/hosts || log "Warning: Failed to add hostname to /etc/hosts"
+    fi
+    
+    log "Hostname set, changes will be fully applied after reboot"
+fi
+
 exit 0 
