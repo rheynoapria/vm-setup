@@ -1,174 +1,264 @@
-# VM Setup - Post-Provisioning Automation
+# Secure VM Setup - Infrastructure as Code
 
-This repository contains automation scripts for secure post-provisioning setup of Ubuntu virtual machines following Infrastructure as Code (IaC) best practices.
+A comprehensive toolkit for automated, secure VM provisioning that follows Infrastructure as Code (IaC) best practices. This repository contains scripts and configurations to harden Ubuntu VMs automatically across multiple cloud providers and deployment models.
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
+## Overview
+
+This toolkit solves the challenge of consistently applying security hardening to virtual machines by providing multiple automation methods that can fit into various deployment workflows. Once applied, your VM will have:
+
+- Secure SSH configuration with key-only authentication
+- Custom configured admin user with appropriate permissions
+- Properly configured firewall with sensible defaults
+- Fail2ban protection against brute force attacks
+- Docker securely installed (optional)
+- Automatic security updates
+- System auditing and monitoring
 
 ## Features
 
-- **Secure System Configuration**: Comprehensive hardening with best security practices
-- **SSH Hardening**: Custom port, key-only authentication, and fail2ban integration
-- **Secure Admin User**: Creates a non-root admin user with sudo privileges
-- **Firewall Setup**: Configures UFW with secure defaults
-- **Docker Support**: Optional Docker installation with proper user permissions
-- **Automatic Updates**: Configures unattended security updates
-- **System Monitoring**: Sets up basic system auditing
-- **Idempotent Design**: Can be safely run multiple times
-- **Error Handling**: Robust error checking and logging
-- **Multi-Environment Compatible**: Works across dev, test, and production
+- **Multi-Platform Support**: Works on AWS, GCP, Azure, and on-premise VMs
+- **Multiple Deployment Methods**: Terraform, Ansible, Packer, Cloud-init, or manual
+- **Secure by Default**: Implements infrastructure security best practices
+- **Highly Configurable**: Customize any aspect via environment variables or config files
+- **Idempotent Design**: Safely run multiple times without breaking things
+- **Comprehensive Logging**: Detailed logs for troubleshooting
+- **Testing Support**: Docker-based testing environment included
+- **Infrastructure as Code**: Everything defined as code for consistency
 
-## Installation Methods
+## Quick Start
 
-### 1. Manual Installation
-
-To install the post-provisioning automation manually:
+### Option 1: One-line Bootstrap (for existing VM)
 
 ```bash
-# Create configuration directory first (optional)
-sudo mkdir -p /opt/scripts/config
-
-# If you want to use your own SSH key, copy it before installation
-sudo cp ~/.ssh/id_rsa.pub /opt/scripts/config/authorized_keys
-
-# Run the installer
-sudo bash install.sh
+curl -sSL https://raw.githubusercontent.com/rheynoapria/vm-setup/main/scripts/bootstrap.sh | sudo bash
 ```
 
-### 2. Terraform Deployment
-
-Deploy a secure VM on AWS with all hardening automatically:
+### Option 2: Terraform Deployment (for new AWS VM)
 
 ```bash
 cd terraform
+cp terraform.tfvars.example terraform.tfvars  # Edit with your values
 terraform init
 terraform apply
 ```
 
-### 3. Cloud-Init Integration
+### Option 3: Cloud-init (for cloud platforms)
 
-Use cloud-init to automatically set up a newly provisioned cloud VM:
+Use the [cloud-init/user-data.yml](cloud-init/user-data.yml) file when launching a new instance.
+
+## Detailed Installation Methods
+
+### 1. Manual Installation
+
+For direct installation on an existing server:
 
 ```bash
-# Create a VM with this user-data
-cloud-config-path=cloud-init/user-data.yml
+# Clone repository
+git clone https://github.com/rheynoapria/vm-setup.git
+cd vm-setup
+
+# Configure SSH key (optional but recommended)
+sudo mkdir -p /opt/scripts/config
+sudo cp ~/.ssh/id_rsa.pub /opt/scripts/config/authorized_keys
+
+# Run installer
+sudo bash install.sh
+
+# Trigger provisioning (or let it happen automatically)
+sudo /opt/scripts/trigger-provision.sh
 ```
+
+### 2. Terraform Deployment
+
+For creating a new hardened VM on AWS:
+
+```bash
+cd terraform
+# Edit variables in terraform.tfvars
+terraform init
+terraform plan  # Review changes
+terraform apply
+```
+
+The Terraform configuration:
+- Creates a new VPC with proper networking
+- Deploys a VM with encrypted storage
+- Applies all hardening automatically via cloud-init
+- Outputs SSH connection details
+
+### 3. Cloud-Init Integration
+
+For automated provisioning during VM creation:
+
+1. Copy the [cloud-init/user-data.yml](cloud-init/user-data.yml) file
+2. Modify the SSH public key and other settings as needed
+3. Provide this as user-data when launching a new VM
+
+Works with AWS, GCP, Azure, DigitalOcean, and other cloud providers supporting cloud-init.
 
 ### 4. Packer Image Building
 
-Build custom hardened VM images for various platforms:
+For creating hardened VM images:
 
 ```bash
-# Build AWS AMI
+# Install HashiCorp Packer first
+# Then build the image for your platform:
+
+# AWS AMI
 ./scripts/packer-build.sh --aws
 
-# Build GCP image
+# GCP Image
 ./scripts/packer-build.sh --gcp
 
-# Build Vagrant box
+# Vagrant Box
 ./scripts/packer-build.sh --vagrant
 ```
 
+The resulting images have all security measures pre-applied, making deployment even faster.
+
 ### 5. Ansible Automation
 
-Deploy to existing servers using Ansible:
+For applying to existing servers:
 
 ```bash
-# Edit inventory.ini to add your servers
 cd ansible
-ansible-playbook playbook.yml
+# Edit inventory.ini to add your servers
+ansible-playbook -i inventory.ini playbook.yml
 ```
+
+Ansible allows for mass-deployment to multiple servers and includes:
+- Configuration verification
+- Parallel deployment support
+- Detailed progress reporting
 
 ### 6. Docker Testing
 
-Test the setup in a Docker container:
+For testing the setup in a controlled environment:
 
 ```bash
+# Build test container
 ./scripts/run-in-docker.sh --build
+
+# Run the container
 ./scripts/run-in-docker.sh --run
+
+# Connect to container
+docker exec -it vm-setup-test bash
+
+# Clean up when done
+./scripts/run-in-docker.sh --clean
 ```
 
-### 7. Bootstrap Script
+This creates a Docker container simulating a fresh Ubuntu VM and applies the hardening process.
 
-Quick one-liner for new VMs:
+## Configuration
 
-```bash
-curl -sSL https://raw.githubusercontent.com/yourusername/vm-setup/main/scripts/bootstrap.sh | sudo bash
+### Core Settings
+
+Key settings that can be configured:
+
+| Setting | Description | Default |
+|---------|-------------|---------|
+| `NEW_USER` | Admin username to create | `sysadmin` |
+| `SSH_PORT` | Custom SSH port | `2222` |
+| `INSTALL_DOCKER` | Whether to install Docker | `true` |
+| `INSTALL_MONITORING` | Install monitoring tools | `true` |
+| `ENABLE_AUTO_UPDATES` | Configure automatic updates | `true` |
+
+### Configuration Methods
+
+1. **Environment Variables**: Set before running install.sh
+2. **Config File**: Create `/opt/scripts/config/settings.env`
+3. **Deployment Parameters**: Pass to Terraform/Ansible/Packer
+
+See [config/settings.env](config/settings.env) for a complete list of configurable options.
+
+## Security Measures
+
+This toolkit implements the following security measures:
+
+- **SSH Hardening**:
+  - Custom port (default: 2222)
+  - Key-only authentication
+  - Disabled root login
+  - Strict ciphers and MAC algorithms
+  - Fail2ban protection against brute force
+
+- **System Hardening**:
+  - Firewall (UFW) with deny-by-default policy
+  - Kernel parameter hardening via sysctl
+  - Automatic security updates
+  - Disabled unnecessary services
+  - Regular security audit logging
+
+- **User Management**:
+  - Creation of non-root admin user
+  - Proper sudo configuration
+  - SSH authorized keys management
+
+- **Docker Security** (when enabled):
+  - Proper user group configuration
+  - Default security practices
+  - Limited container privileges
+
+## Directory Structure
+
 ```
-
-## Usage
-
-### Automatic Trigger
-
-The post-provisioning will automatically run when it detects a trigger directory:
-
-```bash
-# To trigger the post-provisioning process
-sudo mkdir -p /etc/provisioning-pending
+├── ansible/            # Ansible playbooks for deployment
+├── cloud-init/         # Cloud-init templates
+├── config/             # Configuration files
+├── scripts/            # Utility scripts
+├── terraform/          # Terraform configurations
+├── install.sh          # Main installer script
+├── post-provision.sh   # Core provisioning script
+└── README.md           # This documentation
 ```
-
-### Manual Execution
-
-To run the post-provisioning script manually:
-
-```bash
-sudo bash /opt/scripts/post-provision.sh
-```
-
-### Checking Status
-
-The installer creates a status checking script:
-
-```bash
-sudo /opt/scripts/check-provision-status.sh
-```
-
-## Configurations
-
-Default settings can be modified by:
-
-1. Editing the script variables directly
-2. Creating a proper configuration file in `/opt/scripts/config/` (preferred)
-3. Using environment variables with the deployment methods
-
-## Important Security Changes
-
-After the post-provisioning completes:
-
-- **SSH Port**: Changed from default 22 to port 2222
-- **Root Login**: Direct root login is disabled
-- **Admin User**: A new user 'sysadmin' will be created with sudo privileges
-- **SSH Authentication**: Only key-based authentication is allowed
-- **Firewall**: UFW is enabled with restrictive rules
-- **Fail2ban**: Protects against brute force attacks
-
-A summary report is created in `/opt/scripts/provision-summary/` for reference.
-
-## Customization
-
-Before using in production:
-
-- Replace the placeholder SSH keys with your actual public keys
-- Review the hardening settings to match your security requirements
-- Modify Docker installation settings if needed
-- Update system user names if required
 
 ## Troubleshooting
 
-Check the logs for detailed information about the provisioning process:
+### Checking Status
 
 ```bash
+# View provisioning status
+sudo /opt/scripts/check-provision-status.sh
+
+# Check service status
+sudo systemctl status post-provision
+
+# View logs
+sudo journalctl -u post-provision
 cat /var/log/post-provision/post-provision.log
-journalctl -u post-provision
+
+# Check security status
+sudo /opt/scripts/check-security.sh
 ```
 
-## Security Best Practices
+### Common Issues
 
-This setup implements:
-- SSH key-only authentication
-- Firewall protections
-- Regular security updates
-- System hardening 
-- Least privilege principles
-- Service minimization
+| Issue | Solution |
+|-------|----------|
+| SSH key not working | Check `/opt/scripts/config/authorized_keys` permissions (should be 0600) |
+| Service not starting | Verify with `journalctl -u post-provision` |
+| Firewall blocking connections | Use `sudo ufw status` and adjust rules as needed |
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
 ## License
 
-MIT
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Acknowledgments
+
+- Inspired by various security benchmarks including CIS Ubuntu Benchmarks
+- Built following Infrastructure as Code best practices
+- Developed with security and automation as primary goals
