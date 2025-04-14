@@ -32,7 +32,7 @@ users:
 runcmd:
   - export DEBIAN_FRONTEND=noninteractive
   - cd /tmp
-  - git clone https://github.com/yourusername/vm-setup.git
+  - git clone https://github.com/rheynoapria/vm-setup.git
   - cd vm-setup
   - mkdir -p /opt/scripts/config
   - cp /tmp/vm-setup/config/* /opt/scripts/config/ || true
