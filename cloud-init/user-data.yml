@@ -1,0 +1,63 @@
+#cloud-config
+# Cloud-init configuration for Ubuntu VM
+
+# Set hostname
+hostname: ubuntu-secure
+manage_etc_hosts: true
+
+# Update and install dependencies
+package_update: true
+package_upgrade: true
+packages:
+  - git
+  - curl
+  - wget
+
+# Create a trigger directory for post-provision
+bootcmd:
+  - mkdir -p /etc/provisioning-pending
+
+# SSH public keys (replace with your own)
+ssh_authorized_keys:
+  - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC... your_public_key_here
+
+# Configure user
+users:
+  - name: ubuntu
+    groups: sudo
+    shell: /bin/bash
+    sudo: ['ALL=(ALL) NOPASSWD:ALL']
+
+# Run setup script
+runcmd:
+  - export DEBIAN_FRONTEND=noninteractive
+  - cd /tmp
+  - git clone https://github.com/yourusername/vm-setup.git
+  - cd vm-setup
+  - mkdir -p /opt/scripts/config
+  - cp /tmp/vm-setup/config/* /opt/scripts/config/ || true
+  - bash install.sh
+  - rm -rf /tmp/vm-setup
+
+# Write files
+write_files:
+  - path: /opt/scripts/config/settings.env
+    content: |
+      # VM Post-Provisioning Settings
+      NEW_USER="sysadmin"
+      SSH_PORT=2222
+      INSTALL_DOCKER=true
+      INSTALL_MONITORING=true
+      ENABLE_AUTO_UPDATES=true
+    permissions: '0644'
+  
+  - path: /opt/scripts/config/authorized_keys
+    content: |
+      ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC... your_public_key_here
+    permissions: '0644'
+
+# Output all cloud-init logs to the serial console
+output: {all: '| tee -a /var/log/cloud-init-output.log'}
+
+# Report cloud-init status to systemd
+final_message: "VM setup is complete after $UPTIME seconds" 

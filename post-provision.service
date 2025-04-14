@@ -1,0 +1,22 @@
+[Unit]
+Description=Post-provisioning setup for Ubuntu VM
+Documentation=https://github.com/yourusername/vm-setup
+After=network.target network-online.target
+Wants=network-online.target
+ConditionPathExists=!/opt/scripts/provision-summary/system-info.txt
+
+[Service]
+Type=oneshot
+ExecStartPre=/bin/bash -c 'while [ ! -d "/etc/provisioning-pending" ]; do sleep 10; done'
+ExecStart=/bin/bash /opt/scripts/post-provision.sh
+RemainAfterExit=yes
+StandardOutput=journal+console
+StandardError=journal+console
+SyslogIdentifier=post-provision
+WorkingDirectory=/opt/scripts
+Restart=no
+TimeoutStartSec=1800
+TimeoutStopSec=180
+
+[Install]
+WantedBy=multi-user.target 
