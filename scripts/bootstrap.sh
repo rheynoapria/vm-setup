@@ -4,6 +4,7 @@
 # Usage: curl -sSL https://raw.githubusercontent.com/rheynoapria/vm-setup/main/scripts/bootstrap.sh | sudo bash
 # or with custom hostname: curl -sSL https://raw.githubusercontent.com/rheynoapria/vm-setup/main/scripts/bootstrap.sh | sudo bash -s -- --hostname custom-host
 # or with SSH key and hostname: curl -sSL https://raw.githubusercontent.com/rheynoapria/vm-setup/main/scripts/bootstrap.sh | sudo bash -s -- --ssh-key "ssh-rsa AAA..." --hostname custom-host
+# or with custom user: curl -sSL https://raw.githubusercontent.com/rheynoapria/vm-setup/main/scripts/bootstrap.sh | sudo bash -s -- --user myuser
 
 set -eo pipefail
 
@@ -15,6 +16,7 @@ CONFIG_DIR="/opt/scripts/config"
 LOG_FILE="/tmp/bootstrap.log"
 SSH_PUBLIC_KEY=""
 VM_HOSTNAME=""
+NEW_USER=""
 
 # Function for logging
 log() {
@@ -33,6 +35,7 @@ usage() {
     echo "Options:"
     echo "  --hostname HOSTNAME   Set the VM hostname"
     echo "  --ssh-key KEY         SSH public key to use"
+    echo "  --user USERNAME       Set the admin username (default: sysadmin)"
     echo "  -h, --help            Display this help message"
     exit 1
 }
@@ -46,6 +49,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --ssh-key)
             SSH_PUBLIC_KEY="$2"
+            shift 2
+            ;;
+        --user)
+            NEW_USER="$2"
             shift 2
             ;;
         -h|--help)
@@ -106,14 +113,22 @@ fi
 # Set proper permissions on SSH key
 chmod 644 "${CONFIG_DIR}/authorized_keys" || log "Warning: Failed to set permissions on authorized_keys"
 
-# Create settings file if hostname was provided
-if [ -n "${VM_HOSTNAME}" ]; then
-    log "Setting hostname to ${VM_HOSTNAME}"
+# Create settings file if hostname or username was provided
+if [ -n "${VM_HOSTNAME}" ] || [ -n "${NEW_USER}" ]; then
+    log "Creating settings file with custom parameters"
     mkdir -p "${CONFIG_DIR}"
-    cat > "${CONFIG_DIR}/settings.env" << EOF
-# VM Post-Provisioning Settings
-VM_HOSTNAME="${VM_HOSTNAME}"
-EOF
+    
+    echo "# VM Post-Provisioning Settings" > "${CONFIG_DIR}/settings.env"
+    
+    if [ -n "${VM_HOSTNAME}" ]; then
+        log "Setting hostname to ${VM_HOSTNAME}"
+        echo "VM_HOSTNAME=\"${VM_HOSTNAME}\"" >> "${CONFIG_DIR}/settings.env"
+    fi
+    
+    if [ -n "${NEW_USER}" ]; then
+        log "Setting admin username to ${NEW_USER}"
+        echo "NEW_USER=\"${NEW_USER}\"" >> "${CONFIG_DIR}/settings.env"
+    fi
 fi
 
 # Run the installer
@@ -139,12 +154,12 @@ log "When provisioning completes, check status with: /opt/scripts/check-provisio
 if [ -f "${CONFIG_DIR}/settings.env" ]; then
     source "${CONFIG_DIR}/settings.env"
     SSH_PORT=${SSH_PORT:-2222}
-    NEW_USER=${NEW_USER:-sysadmin}
+    DISPLAY_USER=${NEW_USER:-sysadmin}
     HOSTNAME_INFO=${VM_HOSTNAME:-$(hostname -f)}
     echo ""
     echo "================================================================"
     echo "When provisioning completes, connect with:"
-    echo "ssh -p ${SSH_PORT} ${NEW_USER}@$(hostname -I | awk '{print $1}')"
+    echo "ssh -p ${SSH_PORT} ${DISPLAY_USER}@$(hostname -I | awk '{print $1}')"
     echo "Hostname has been set to: ${HOSTNAME_INFO}"
     echo "================================================================"
 fi
