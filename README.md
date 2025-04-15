@@ -41,9 +41,19 @@ With custom hostname:
 curl -sSL https://raw.githubusercontent.com/rheynoapria/vm-setup/main/scripts/bootstrap.sh | sudo bash -s -- --hostname custom-host
 ```
 
+With custom admin user:
+```bash
+curl -sSL https://raw.githubusercontent.com/rheynoapria/vm-setup/main/scripts/bootstrap.sh | sudo bash -s -- --user custom-admin
+```
+
 With SSH key and hostname:
 ```bash
 curl -sSL https://raw.githubusercontent.com/rheynoapria/vm-setup/main/scripts/bootstrap.sh | sudo bash -s -- --ssh-key "ssh-rsa AAA..." --hostname custom-host
+```
+
+With all options combined:
+```bash
+curl -sSL https://raw.githubusercontent.com/rheynoapria/vm-setup/main/scripts/bootstrap.sh | sudo bash -s -- --user custom-admin --ssh-key "ssh-rsa AAA..." --hostname custom-host
 ```
 
 ### Option 2: Terraform Deployment (for new AWS VM)
