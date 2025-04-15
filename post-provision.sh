@@ -129,6 +129,17 @@ else
     log "User $NEW_USER created with SSH key and sudo privileges"
 fi
 
+# 3.1. Create user directory in /opt
+log "Creating user directory in /opt/$NEW_USER"
+if [ ! -d "/opt/$NEW_USER" ]; then
+    mkdir -p "/opt/$NEW_USER" || error_exit "Failed to create directory /opt/$NEW_USER"
+    chown -R "$NEW_USER:$NEW_USER" "/opt/$NEW_USER" || error_exit "Failed to set ownership on /opt/$NEW_USER"
+    chmod 750 "/opt/$NEW_USER" || error_exit "Failed to set permissions on /opt/$NEW_USER"
+    log "User directory /opt/$NEW_USER created successfully"
+else
+    log "Directory /opt/$NEW_USER already exists"
+fi
+
 # 4. Configure SSH security
 log "Securing SSH..."
 

@@ -183,6 +183,7 @@ Key settings that can be configured:
 | `NEW_USER` | Admin username to create | `sysadmin` |
 | `SSH_PORT` | Custom SSH port | `2222` |
 | `VM_HOSTNAME` | Hostname to set on the VM | `secure-vm` |
+| `CREATE_USER_DIR` | Whether to create user directory in /opt | `true` |
 | `INSTALL_DOCKER` | Whether to install Docker | `true` |
 | `INSTALL_MONITORING` | Install monitoring tools | `true` |
 | `ENABLE_AUTO_UPDATES` | Configure automatic updates | `true` |
@@ -217,6 +218,7 @@ This toolkit implements the following security measures:
   - Creation of non-root admin user
   - Proper sudo configuration
   - SSH authorized keys management
+  - User directory in /opt/{username} with proper permissions
 
 - **Docker Security** (when enabled):
   - Proper user group configuration
@@ -283,3 +285,52 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - Inspired by various security benchmarks including CIS Ubuntu Benchmarks
 - Built following Infrastructure as Code best practices
 - Developed with security and automation as primary goals
+
+## Implementation Details
+
+### User Management
+- The setup creates a non-root admin user with the username specified in `NEW_USER`
+- Configures sudo access with password requirement
+- Sets up SSH authorized keys for the new user
+- When `CREATE_USER_DIR` is enabled, creates a directory at `/opt/${NEW_USER}` owned by the user
+- Removes unnecessary default users
+
+### System Hardening
+- **SSH Hardening**:
+  - Custom port configuration (default: 2222)
+  - Disables root login completely
+  - Enables key-only authentication (disables password auth)
+  - Restricts SSH access to the specified admin user
+  - Sets appropriate session timeouts (ClientAliveInterval: 300s)
+  - Limits authentication attempts to prevent brute force attacks
+  - Creates backup of original SSH configuration
+
+- **Firewall Configuration**:
+  - Configures UFW with deny-by-default policy for incoming traffic
+  - Allows outgoing connections by default
+  - Opens only the necessary custom SSH port
+  - Implements strict IPv4/IPv6 packet filtering
+
+- **Brute Force Protection**:
+  - Installs and configures fail2ban
+  - Sets ban time to 24 hours by default (configurable)
+  - Monitors SSH authentication logs
+  - Implements automatic IP blocking after 3 failed attempts
+
+- **System Security Controls**:
+  - Hardens kernel parameters via sysctl configuration
+  - Protects against IP spoofing, ICMP broadcast requests
+  - Disables source packet routing
+  - Configures TCP/SYN attack protection
+  - Enables Martian packet logging
+  - Implements IPv6 privacy extensions
+
+- **Service Management**:
+  - Disables unnecessary services (avahi-daemon, cups, bluetooth)
+  - Implements automatic security updates when enabled
+  - Configures unattended-upgrades for critical patches
+
+- **Monitoring and Auditing**:
+  - Installs auditd for system call auditing when monitoring is enabled
+  - Creates security status checking tool at `/opt/scripts/check-security.sh`
+  - Generates detailed provisioning summary report
